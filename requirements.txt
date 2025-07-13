@@ -6,4 +6,3 @@ seaborn
 xgboost
 lightgbm
 plotly
-streamlit
