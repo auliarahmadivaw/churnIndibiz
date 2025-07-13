@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import joblib
-import base64
 import numpy as np
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.compose import ColumnTransformer
