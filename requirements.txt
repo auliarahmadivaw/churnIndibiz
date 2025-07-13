@@ -6,7 +6,7 @@ plotly==5.15.0
 scikit-learn==1.2.2
 xgboost==1.7.6
 lightgbm==3.3.5
-shap==0.41.0
+shap==0.40.0
 joblib==1.2.0
 streamlit==1.27.2
 openpyxl==3.1.2
