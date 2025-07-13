@@ -9,4 +9,3 @@ lightgbm==3.3.5
 shap==0.40.0
 joblib==1.2.0
 streamlit==1.27.2
-openpyxl==3.1.2
