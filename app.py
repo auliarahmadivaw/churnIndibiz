@@ -191,6 +191,38 @@ elif page == "Unggah Data File":
                         ax2.set_xlabel('Kategori Resiko Churn')
                         ax2.set_ylabel('Jumlah')
                         st.pyplot(fig2)
+                         # Tambahkan Kesimpulan Ringkas setelah grafik distribusi churn
+                        with st.container():
+                            st.markdown("### 🧾 Kesimpulan Ringkas")
+                            total_pelanggan = len(st.session_state.data_to_predict)
+                            tinggi = churn_risk_counts.get('Tinggi', 0)
+                            sedang = churn_risk_counts.get('Sedang', 0)
+                            rendah = churn_risk_counts.get('Rendah', 0)
+                    
+                            st.markdown(f"""
+                            Dari total **{total_pelanggan} pelanggan**, distribusi risiko churn adalah sebagai berikut:
+                            - 🔴 **{tinggi} pelanggan** tergolong **resiko Tinggi**
+                            - 🟡 **{sedang} pelanggan** tergolong **resiko Sedang**
+                            - 🟢 **{rendah} pelanggan** tergolong **resiko Rendah**
+                            """)
+                    
+                            try:
+                                top_paket = st.session_state.data_to_predict[st.session_state.data_to_predict['Churn_Risk_Category'] == 'Tinggi']['PAKET_DIGI'].value_counts().idxmax()
+                                top_sto = st.session_state.data_to_predict[st.session_state.data_to_predict['Churn_Risk_Category'] == 'Tinggi']['STO'].value_counts().idxmax()
+                                top_produk = st.session_state.data_to_predict[st.session_state.data_to_predict['Churn_Risk_Category'] == 'Tinggi']['L_PRODUK'].value_counts().idxmax()
+                                top_ekosistem = st.session_state.data_to_predict[st.session_state.data_to_predict['Churn_Risk_Category'] == 'Tinggi']['L_EKOSISTEM'].value_counts().idxmax()
+                    
+                                st.markdown(f"""
+                                📌 Sebagian besar pelanggan dengan risiko churn tinggi berasal dari:
+                                - Paket: **{top_paket}**
+                                - STO: **{top_sto}**
+                                - Produk: **{top_produk}**
+                                - Ekosistem: **{top_ekosistem}**
+                    
+                                Temuan ini menjadi dasar dalam menyusun rekomendasi pada halaman **Analisis Churn** berikutnya.
+                                """)
+                            except Exception as e:
+                                st.warning("Tidak dapat menghitung analisis berdasarkan variabel: beberapa kolom mungkin kosong.")
                         plt.close(fig2)
                 except Exception as e:
                     st.error(f"❌ Error during prediction: {e}")
@@ -199,26 +231,7 @@ elif page == "Unggah Data File":
             else:
                 st.warning("⚠️ Silakan unggah file data pelanggan terlebih dahulu.")
                 
-         # Tambahkan kesimpulan berdasarkan jumlah churn
-        st.markdown("### Kesimpulan Risiko Churn")
-        high = churn_counts.get("Tinggi", 0)
-        medium = churn_counts.get("Sedang", 0)
-        low = churn_counts.get("Rendah", 0)
-        st.markdown(f"- Jumlah pelanggan dengan risiko **Tinggi**: {high}")
-        st.markdown(f"- Jumlah pelanggan dengan risiko **Sedang**: {medium}")
-        st.markdown(f"- Jumlah pelanggan dengan risiko **Rendah**: {low}")
-
-        total = high + medium + low
-        if high > medium and high > low:
-            st.markdown("👉 Mayoritas pelanggan berada pada kategori **risiko churn tinggi**, yang menunjukkan perlunya strategi retensi yang agresif.")
-        elif medium > high and medium > low:
-            st.markdown("👉 Mayoritas pelanggan berada pada kategori **risiko churn sedang**, sehingga perlu penguatan loyalitas dan pelayanan.")
-        else:
-            st.markdown("👉 Sebagian besar pelanggan memiliki **risiko churn rendah**, namun tetap perlu pemantauan berkala.")
-
-        st.markdown("---")
-        st.subheader("Analisis Pelanggan Churn")
-
+    
 elif page == "Input Data Manual":
     with st.container():
         st.header("⌨️ Input Data Manual")
