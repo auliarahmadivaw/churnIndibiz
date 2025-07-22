@@ -15,29 +15,20 @@ st.set_page_config(page_title="Dashboard Churn IndiBiz", layout="wide")
 try:
     model = joblib.load('xgb_churn_model.pkl')
     preprocessor = joblib.load('preprocessor.pkl')
-
 except FileNotFoundError:
     st.error("Model atau preprocessor tidak ditemukan. Pastikan file 'xgb_churn_model.pkl' dan 'preprocessor.pkl' ada di direktori yang sama.")
     st.stop() # Stop the app if files are not found
 
-
-
 # Let's define the features that the preprocessor expects:
 features_for_preprocessing = ['STO', 'PAKET_DIGI', 'Lama_Berlangganan_Bulan']
 
-
 # Define the categorical and numerical features used in the preprocessor
-# Based on cell NamMnwUDMZ9h, these were:
 categorical_features = ['STO', 'PAKET_DIGI']
 numerical_features = ['Lama_Berlangganan_Bulan']
 
-# Get the unique values for categorical features from the training data (assuming they are representative)
-# You would typically load these from a saved list or infer from the preprocessor if possible
-# For this example, let's use some plausible options based on the EDA outputs
-# Ensure these lists contain all possible values the model was trained on
+# Get the unique values for categorical features (contoh)
 sto_options = ['PBB', 'ARK', 'PKR', 'DUM', 'PPN', 'RGT', 'UBT', 'TBH', 'AMK', 'DRI', 'BKR', 'RBI', 'TAK', 'BGU', 'SLJ', 'BKN', 'BAG', 'SAK', 'PMB', 'BAS', 'MIS', 'PWG', 'SOK', 'KLE', 'SEA', 'SGP']
 paket_digi_options = ['1P HSI', '2P', 'sooltanNet F 2P', '3P', '2P INET + VOICE', '1P VOICE', 'sooltanNet E 2P', 'sooltanNet C 3P', '1P INET', '1P']
-
 
 # Function to assign churn risk category
 def assign_churn_risk(prob):
@@ -50,7 +41,33 @@ def assign_churn_risk(prob):
     else:
         return 'Tinggi'
 
-# Initialize session state for data_to_predict if it doesn't exist
+# -------------------------------
+# Tambahkan Fungsi Rekomendasi
+# -------------------------------
+def generate_recommendations(df):
+    recs = []
+    # Rekomendasi berdasarkan Paket
+    if 'PAKET_DIGI' in df.columns and 'Churn_Risk_Category' in df.columns:
+        paket_counts = df[df['Churn_Risk_Category'] == 'Tinggi']['PAKET_DIGI'].value_counts()
+        if not paket_counts.empty:
+            top_paket = paket_counts.index[0]
+            recs.append(f"Fokuskan kampanye retensi pada pelanggan dengan paket {top_paket} karena mendominasi risiko churn tinggi.")
+    # Rekomendasi berdasarkan STO
+    if 'STO' in df.columns and 'Churn_Risk_Category' in df.columns:
+        sto_counts = df[df['Churn_Risk_Category'] == 'Tinggi']['STO'].value_counts()
+        if not sto_counts.empty:
+            top_sto = sto_counts.head(3).index.tolist()
+            recs.append(f"Lakukan audit teknis pada STO: {', '.join(top_sto)} karena memiliki konsentrasi churn tinggi.")
+    # Rekomendasi berdasarkan Lama Berlangganan
+    if 'Lama_Berlangganan_Bulan' in df.columns and 'Churn_Risk_Category' in df.columns:
+        tenure_vals = df[df['Churn_Risk_Category'] == 'Tinggi']['Lama_Berlangganan_Bulan']
+        if not tenure_vals.empty and tenure_vals.mean() < 12:
+            recs.append("Perkuat program onboarding dan komunikasi pada pelanggan dengan masa berlangganan kurang dari 12 bulan.")
+    return recs
+
+# -------------------------------
+# Inisialisasi Session State
+# -------------------------------
 if 'data_to_predict' not in st.session_state:
     st.session_state.data_to_predict = None
 
@@ -64,208 +81,122 @@ st.title("📊 Dashboard Prediksi Churn Pelanggan IndiBiz")
 st.sidebar.header("Navigasi 🧭")
 page = st.sidebar.radio("Pilih Halaman:", ["Informasi Dashboard", "Unggah Data File", "Input Data Manual", "Analisis Pelanggan Churn"])
 
-
 # =======================
 # Main Content Area based on Sidebar Selection
 # =======================
 
 if page == "Informasi Dashboard":
     with st.container():
-        st.header("📝 Informasi Dashboard") # Add header with emoji
-
-        # Add space and then the image placeholder
-        st.markdown("---") # Add a horizontal rule for separation
-
-        # Use columns to center the image
-        col1, col2, col3 = st.columns([1, 2, 1]) # Create three columns, middle one wider
-
-        with col2: # Place the image in the middle column
-             st.image("coba2.jpg",  width=500) # Placeholder for company image
-
-        st.markdown("---") # Add another horizontal rule
-
+        st.header("📝 Informasi Dashboard")
+        st.markdown("---")
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            st.image("coba2.jpg", width=500)
+        st.markdown("---")
         st.markdown("""
         Selamat datang di Dashboard Prediksi Churn Pelanggan IndiBiz.
-        Dashboard ini membantu Anda memahami faktor-faktor yang mempengaruhi churn dan memprediksi pelanggan yang berisiko tinggi untuk churn menggunakan model machine learning.
+        Dashboard ini membantu Anda memahami faktor-faktor yang mempengaruhi churn dan memprediksi pelanggan yang berisiko tinggi menggunakan model machine learning.
         """)
-
 
 elif page == "Unggah Data File":
     with st.container():
-        st.header("📤 Unggah Data Pelanggan") # Add header with emoji
-        st.info("Unggah file Excel (.xlsx) yang berisi data pelanggan untuk prediksi.") # Add info message
-        # A more robust way is to allow uploading a CSV file
+        st.header("📤 Unggah Data Pelanggan")
+        st.info("Unggah file Excel (.xlsx) yang berisi data pelanggan untuk prediksi.")
         uploaded_file = st.file_uploader("Upload file Excel data pelanggan (.xlsx) 📂", type=["xlsx"])
-
         if uploaded_file is not None:
             try:
                 data_to_predict_uploaded = pd.read_excel(uploaded_file)
-                st.session_state.data_to_predict = data_to_predict_uploaded # Store uploaded data in session state
+                st.session_state.data_to_predict = data_to_predict_uploaded
                 st.success("✅ File berhasil diunggah.")
                 st.dataframe(st.session_state.data_to_predict.head())
-
-                # Ensure the uploaded data has the necessary columns for preprocessing and display
-                # Required columns are those needed by the preprocessor PLUS any columns needed for display (like Customer_Name)
-                required_columns = features_for_preprocessing + ['Customer_Name'] # Need Customer_Name for display
-                # You might also need 'Order Id', 'SPEEDY', 'L_EKOSISTEM', 'L_PRODUK' for display or other purposes later,
-                # but they are not strictly required by the preprocessor itself based on the notebook code.
-                # Let's add them to required_columns if they are expected to be in the input file for display.
-                # Based on the final output dataframe in the notebook, these columns ('Order Id', 'SPEEDY', 'L_EKOSISTEM', 'L_PRODUK') are present.
-                # So, let's include them in the required columns for the input file.
+                required_columns = features_for_preprocessing + ['Customer_Name']
                 required_columns.extend(['Order Id', 'SPEEDY', 'L_EKOSISTEM', 'L_PRODUK'])
-                # Remove duplicates just in case
                 required_columns = list(dict.fromkeys(required_columns))
-
-
                 if not all(col in st.session_state.data_to_predict.columns for col in required_columns):
                     missing_cols = [col for col in required_columns if col not in st.session_state.data_to_predict.columns]
                     st.error(f"❌ File yang diunggah harus memiliki kolom berikut: {', '.join(missing_cols)}")
-                    st.session_state.data_to_predict = None # Reset data if columns is missing
-
-
+                    st.session_state.data_to_predict = None
             except Exception as e:
                 st.error(f"❌ Error loading file: {e}")
                 st.session_state.data_to_predict = None
 
-        # =======================
-        # 5. Prediction (for File Upload)
-        # =======================
         if st.button("🚀 Prediksi Churn"):
             if st.session_state.data_to_predict is not None:
                 try:
-                    # Columns for prediction must match the features used in the preprocessor
                     columns_for_prediction = features_for_preprocessing
-
-                    # Select only the feature columns needed for prediction that the preprocessor is trained on
                     X_predict = st.session_state.data_to_predict[columns_for_prediction]
-
-                    # Apply the same preprocessing as during training
-                    # Use the fitted preprocessor
                     X_predict_processed = preprocessor.transform(X_predict)
-
-                    # Convert processed data back to DataFrame with correct column names for SHAP (optional but good practice)
-                    # Get feature names after preprocessing
                     cat_encoder_full = preprocessor.named_transformers_['cat']
-                    # Use the original categorical feature names used in preprocessor training
                     all_feature_names_full = list(cat_encoder_full.get_feature_names_out(categorical_features)) + numerical_features
-
                     X_predict_df = pd.DataFrame(X_predict_processed.toarray() if hasattr(X_predict_processed, 'toarray') else X_predict_processed,
                                                 columns=all_feature_names_full)
-
-
-                    # Make predictions
                     predictions = model.predict(X_predict_df)
-                    probabilities = model.predict_proba(X_predict_df)[:, 1] # Probability of churn (class 1)
-
-                    # Add predictions and probabilities to the original dataframe (make a copy to avoid SettingWithCopyWarning)
+                    probabilities = model.predict_proba(X_predict_df)[:, 1]
                     data_with_predictions = st.session_state.data_to_predict.copy()
                     data_with_predictions['Predicted_Status_Churn'] = predictions
                     data_with_predictions['Churn_Probability'] = probabilities
-
-                    # Add Churn Risk Category based on probability
                     data_with_predictions['Churn_Risk_Category'] = data_with_predictions['Churn_Probability'].apply(assign_churn_risk)
-
-                    st.session_state.data_to_predict = data_with_predictions # Update session state with predictions
-
-
+                    st.session_state.data_to_predict = data_with_predictions
                     st.subheader("📈 Hasil Prediksi Churn")
-                    # Display relevant columns, ensure 'Customer_Name' is included if it exists in the uploaded data
                     display_columns = ['Customer_Name', 'Predicted_Status_Churn', 'Churn_Probability', 'Churn_Risk_Category']
                     st.dataframe(st.session_state.data_to_predict[display_columns])
-
-                    # Display summary of churn predictions using charts
                     st.subheader("📊 Ringkasan Prediksi Churn")
-
-                    # Chart for Churn Risk Category Distribution (Bar Chart)
-                    # Using a single container which might help with centering or at least a cleaner layout
                     with st.container(border=True):
                         st.write("Distribusi Kategori Resiko Churn ⚠️")
                         churn_risk_counts = st.session_state.data_to_predict['Churn_Risk_Category'].value_counts().reindex(['Rendah', 'Sedang', 'Tinggi'])
-                        fig2, ax2 = plt.subplots(figsize=(6, 4)) # Further adjusted figure size
+                        fig2, ax2 = plt.subplots(figsize=(6, 4))
                         sns.barplot(x=churn_risk_counts.index, y=churn_risk_counts.values, ax=ax2, palette='viridis')
                         ax2.set_xlabel('Kategori Resiko Churn')
                         ax2.set_ylabel('Jumlah')
                         st.pyplot(fig2)
-                        plt.close(fig2) # Close the figure to prevent it from being displayed twice
-
-
+                        plt.close(fig2)
                 except Exception as e:
                     st.error(f"❌ Error during prediction: {e}")
                     import traceback
                     st.text(traceback.format_exc())
-
             else:
                 st.warning("⚠️ Silakan unggah file data pelanggan terlebih dahulu.")
 
-
 elif page == "Input Data Manual":
     with st.container():
-        st.header("⌨️ Input Data Manual") # Add header with emoji
-        st.info("Masukkan detail pelanggan secara manual di bawah ini.") # Add info message
-
-        # Add input fields for manual data here
-        # Removed manual_customer_name input
+        st.header("⌨️ Input Data Manual")
+        st.info("Masukkan detail pelanggan secara manual di bawah ini.")
         manual_sto = st.selectbox("STO", sto_options)
         manual_paket_digi = st.selectbox("PAKET_DIGI", paket_digi_options)
-        manual_lama_berlangganan = st.slider("Lama Berlangganan (Bulan)", min_value=0, max_value=100, value=12) # Changed to slider
-
-        # =======================
-        # 5. Prediction (for Manual Input)
-        # =======================
+        manual_lama_berlangganan = st.slider("Lama Berlangganan (Bulan)", min_value=0, max_value=100, value=12)
         if st.button("🚀 Prediksi Churn"):
-             # Check if required manual inputs are provided
-             if manual_sto and manual_paket_digi is not None and manual_lama_berlangganan is not None:
+            if manual_sto and manual_paket_digi is not None and manual_lama_berlangganan is not None:
                  try:
-                    # Create a DataFrame from manual input
                     manual_data = pd.DataFrame({
                         'STO': [manual_sto],
                         'PAKET_DIGI': [manual_paket_digi],
                         'Lama_Berlangganan_Bulan': [manual_lama_berlangganan]
                     })
-
-                    # Columns for prediction must match the features used in the preprocessor
                     columns_for_prediction = features_for_preprocessing
-
-                    # Select only the feature columns needed for prediction that the preprocessor is trained on
                     X_predict = manual_data[columns_for_prediction]
-
-
-                    # Apply preprocessing
                     manual_data_processed = preprocessor.transform(X_predict)
-
-                    # Convert processed data back to DataFrame with correct column names
                     cat_encoder_full = preprocessor.named_transformers_['cat']
                     all_feature_names_full = list(cat_encoder_full.get_feature_names_out(categorical_features)) + numerical_features
                     manual_data_processed_df = pd.DataFrame(manual_data_processed.toarray() if hasattr(manual_data_processed, 'toarray') else manual_data_processed,
                                                             columns=all_feature_names_full)
-
-                    # Make prediction
                     manual_prediction = model.predict(manual_data_processed_df)[0]
                     manual_probability = model.predict_proba(manual_data_processed_df)[:, 1][0]
-
-                    # Determine Churn Risk Category
                     manual_churn_risk = assign_churn_risk(manual_probability)
-
                     st.subheader("📈 Hasil Prediksi Churn (Input Manual)")
-                    # Removed Customer_Name display
                     st.write(f"**Prediksi Status Churn:** {'Churn' if manual_prediction == 1 else 'Tidak Churn'}")
                     st.write(f"**Probabilitas Churn:** {manual_probability:.4f}")
                     st.write(f"**Kategori Resiko Churn:** {manual_churn_risk}")
-
                  except Exception as e:
                     st.error(f"❌ Error during manual prediction: {e}")
                     import traceback
                     st.text(traceback.format_exc())
-
-             else:
+            else:
                  st.warning("⚠️ Harap lengkapi semua bidang input manual.")
-
 
 elif page == "Analisis Pelanggan Churn":
     with st.container():
         st.header("🔍 Analisis Pelanggan Churn")
         st.markdown("Visualisasi persebaran risiko churn berdasarkan faktor layanan pelanggan.")
-
         if st.session_state.data_to_predict is not None and 'Churn_Risk_Category' in st.session_state.data_to_predict.columns:
             df_mer = st.session_state.data_to_predict.copy()
 
@@ -344,6 +275,17 @@ elif page == "Analisis Pelanggan Churn":
             ax.set_ylabel("Ekosistem")
             st.pyplot(fig)
             plt.close(fig)
+
+            # -------------------------------
+            # Tampilkan Rekomendasi Dinamis
+            # -------------------------------
+            st.subheader("📌 Rekomendasi Strategis")
+            recommendations = generate_recommendations(df_mer)
+            if recommendations:
+                for i, rec in enumerate(recommendations, 1):
+                    st.markdown(f"**{i}.** {rec}")
+            else:
+                st.info("Tidak ada rekomendasi tambahan berdasarkan data saat ini.")
 
         else:
             st.warning("Silakan unggah data prediksi churn yang mencakup kolom 'Churn_Risk_Category' terlebih dahulu.")
