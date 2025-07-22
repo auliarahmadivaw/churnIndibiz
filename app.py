@@ -47,39 +47,57 @@ def assign_churn_risk(prob):
 def generate_recommendations(df):
     recs = []
 
-    # Rekomendasi 1: Fokus pada Paket dengan Churn Tinggi
+    # 1. Intervensi Proaktif pada Paket atau Produk Digital
     if 'PAKET_DIGI' in df.columns and 'Churn_Risk_Category' in df.columns:
-        high_risk_paket = df[df['Churn_Risk_Category'] == 'Tinggi']['PAKET_DIGI'].value_counts()
-        if not high_risk_paket.empty:
-            top_paket = high_risk_paket.idxmax()
+        paket_counts = df[df['Churn_Risk_Category'] == 'Tinggi']['PAKET_DIGI'].value_counts()
+        if not paket_counts.empty:
+            top_paket = paket_counts.idxmax()
             recs.append(
-                f"Intervensi proaktif pada produk dan paket seperti **{top_paket}**, karena menunjukkan konsentrasi pelanggan dengan risiko churn tinggi."
+                f"Intervensi proaktif pada pelanggan paket seperti **{top_paket}**, karena menunjukkan konsentrasi risiko churn tinggi."
             )
 
-    # Rekomendasi 2: Audit STO dengan Konsentrasi Risiko Tinggi
+    # 2. Perbaikan Layanan di STO Tertentu
     if 'STO' in df.columns and 'Churn_Risk_Category' in df.columns:
-        high_risk_sto = df[df['Churn_Risk_Category'] == 'Tinggi']['STO'].value_counts()
-        if not high_risk_sto.empty:
-            top_sto_list = high_risk_sto.head(2).index.tolist()
-            sto_text = ", ".join(top_sto_list)
+        sto_counts = df[df['Churn_Risk_Category'] == 'Tinggi']['STO'].value_counts()
+        if not sto_counts.empty:
+            top_sto = sto_counts.head(2).index.tolist()
             recs.append(
-                f"Lakukan audit teknis dan evaluasi kualitas layanan di wilayah STO: **{sto_text}**, karena mencatatkan tingkat churn tertinggi."
+                f"Lakukan audit teknis dan peningkatan kualitas layanan di STO seperti **{', '.join(top_sto)}** yang mencatat churn tertinggi."
             )
 
-    # Rekomendasi 3: Onboarding & Engagement
+    # 3. Edukasi & Engagement di 6–12 Bulan Pertama
     if 'Lama_Berlangganan_Bulan' in df.columns and 'Churn_Risk_Category' in df.columns:
         tenure = df[df['Churn_Risk_Category'] == 'Tinggi']['Lama_Berlangganan_Bulan']
         if not tenure.empty:
             if tenure.mean() < 12:
                 recs.append(
-                    "Perkuat program onboarding dan komunikasi intensif pada pelanggan dengan masa berlangganan kurang dari 12 bulan untuk mencegah churn dini."
+                    "Tingkatkan edukasi, onboarding, dan komunikasi rutin untuk pelanggan baru (<12 bulan) karena mereka berisiko lebih tinggi untuk churn."
                 )
             else:
                 recs.append(
-                    "Tinjau kembali program loyalitas untuk pelanggan lama karena churn juga terjadi setelah masa berlangganan lebih dari 12 bulan."
+                    "Perkuat loyalitas dan manfaat tambahan bagi pelanggan jangka panjang yang tetap menunjukkan risiko churn."
                 )
 
+    # 4. Segmentasi Penawaran Berdasarkan Ekosistem
+    if 'EKOSISTEM' in df.columns and 'Churn_Risk_Category' in df.columns:
+        ekosistem_risk = df[df['Churn_Risk_Category'] == 'Tinggi']['EKOSISTEM'].value_counts()
+        if not ekosistem_risk.empty:
+            top_eko = ekosistem_risk.head(2).index.tolist()
+            recs.append(
+                f"Buat program loyalitas khusus atau referral untuk ekosistem seperti **{', '.join(top_eko)}** yang memiliki tingkat churn tinggi."
+            )
+
+    # 5. Evaluasi Berdasarkan Jenis Produk
+    if 'L_PRODUK' in df.columns and 'Churn_Risk_Category' in df.columns:
+        produk_risk = df[df['Churn_Risk_Category'] == 'Tinggi']['L_PRODUK'].value_counts()
+        if not produk_risk.empty:
+            top_produk = produk_risk.idxmax()
+            recs.append(
+                f"Tinjau ulang benefit dan struktur produk **{top_produk}**, karena mendominasi kategori pelanggan dengan risiko churn tinggi."
+            )
+
     return recs
+
 
 # -------------------------------
 # Inisialisasi Session State
