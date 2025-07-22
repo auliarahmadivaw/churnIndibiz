@@ -260,54 +260,90 @@ elif page == "Input Data Manual":
              else:
                  st.warning("⚠️ Harap lengkapi semua bidang input manual.")
 
+
 elif page == "Analisis Pelanggan Churn":
     with st.container():
         st.header("🔍 Analisis Pelanggan Churn")
-        st.markdown("Visualisasi faktor-faktor yang terkait dengan pelanggan yang diprediksi churn berdasarkan hasil model.")
+        st.markdown("Visualisasi persebaran risiko churn berdasarkan faktor layanan pelanggan.")
 
-        # Gunakan data prediksi dari session state
         if st.session_state.data_to_predict is not None and 'Churn_Risk_Category' in st.session_state.data_to_predict.columns:
-            df_predict = st.session_state.data_to_predict
+            df_mer = st.session_state.data_to_predict.copy()
 
-            st.subheader("Distribusi Kategori Risiko Churn")
-            fig, ax = plt.subplots()
-            sns.countplot(data=df_predict, x="Churn_Risk_Category", order=["Rendah", "Sedang", "Tinggi"], palette="Set2")
-            ax.set_title("Distribusi Risiko Churn")
-            ax.set_xlabel("Kategori Risiko")
-            ax.set_ylabel("Jumlah Pelanggan")
+            # Visualisasi Risiko Churn berdasarkan PAKET_DIGI
+            st.subheader("📦 Risiko Churn berdasarkan Jenis Paket")
+            paket_risk = df_mer.groupby(['PAKET_DIGI', 'Churn_Risk_Category']).size().unstack().fillna(0)
+            fig, ax = plt.subplots(figsize=(10,6))
+            paket_risk.plot(kind='bar', stacked=True, ax=ax, colormap='viridis')
+            ax.set_title('Distribusi Risiko Churn berdasarkan Jenis Paket')
+            ax.set_xlabel('Paket Digi')
+            ax.set_ylabel('Jumlah Pelanggan')
+            ax.legend(title='Kategori Risiko')
+            plt.xticks(rotation=45)
+            plt.tight_layout()
             st.pyplot(fig)
             plt.close(fig)
 
-            # Visualisasi berdasarkan Paket Digi
-            st.subheader("Distribusi Risiko Churn berdasarkan Paket Digi")
-            fig, ax = plt.subplots(figsize=(10, 6))
-            sns.countplot(data=df_predict, y="PAKET_DIGI", hue="Churn_Risk_Category", order=df_predict["PAKET_DIGI"].value_counts().index)
-            ax.set_title("Risiko Churn berdasarkan Paket Digi")
-            ax.set_xlabel("Jumlah")
-            ax.set_ylabel("Paket Digi")
+            # Visualisasi Risiko Churn berdasarkan STO
+            st.subheader("📍 Risiko Churn berdasarkan STO")
+            sto_risk = df_mer.groupby(['STO', 'Churn_Risk_Category']).size().unstack().fillna(0)
+            fig, ax = plt.subplots(figsize=(10,6))
+            sto_risk.plot(kind='bar', stacked=True, ax=ax, colormap='plasma')
+            ax.set_title('Distribusi Risiko Churn berdasarkan STO')
+            ax.set_xlabel('STO')
+            ax.set_ylabel('Jumlah Pelanggan')
+            ax.legend(title='Kategori Risiko')
+            plt.xticks(rotation=45)
+            plt.tight_layout()
             st.pyplot(fig)
             plt.close(fig)
 
-            # Visualisasi berdasarkan STO
-            st.subheader("Distribusi Risiko Churn berdasarkan STO")
-            fig, ax = plt.subplots(figsize=(10, 8))
-            sns.countplot(data=df_predict, y="STO", hue="Churn_Risk_Category", order=df_predict["STO"].value_counts().index)
-            ax.set_title("Risiko Churn berdasarkan STO")
-            ax.set_xlabel("Jumlah")
-            ax.set_ylabel("STO")
+            # Visualisasi Risiko Churn berdasarkan Lama Berlangganan
+            st.subheader("📊 Risiko Churn berdasarkan Lama Berlangganan")
+            df_filtered_lama = df_mer[df_mer['Lama_Berlangganan_Bulan'] > 0].copy()
+            bins = [0, 6, 12, 24, 36, 48, df_filtered_lama['Lama_Berlangganan_Bulan'].max()]
+            labels = ['0-6 bulan', '7-12 bulan', '13-24 bulan', '25-36 bulan', '37-48 bulan', '>48 bulan']
+            if df_filtered_lama['Lama_Berlangganan_Bulan'].max() <= 48:
+                for i, bin_val in enumerate(bins):
+                    if df_filtered_lama['Lama_Berlangganan_Bulan'].max() <= bin_val:
+                        bins = bins[:i+1]
+                        labels = labels[:i]
+                        break
+                if bins[-1] == df_filtered_lama['Lama_Berlangganan_Bulan'].max() and len(labels) == len(bins) - 1:
+                    labels[-1] = f'>{bins[-2]} bulan'
+            df_filtered_lama['Lama_Berlangganan_Bulan_Binned'] = pd.cut(df_filtered_lama['Lama_Berlangganan_Bulan'], bins=bins, labels=labels, right=True, include_lowest=True, ordered=False)
+            df_filtered_lama.dropna(subset=['Lama_Berlangganan_Bulan_Binned'], inplace=True)
+            lama_berlangganan_risk = df_filtered_lama.groupby(['Lama_Berlangganan_Bulan_Binned', 'Churn_Risk_Category']).size().unstack().fillna(0)
+
+            fig, ax = plt.subplots(figsize=(10,6))
+            lama_berlangganan_risk.plot(kind='bar', stacked=True, ax=ax, colormap='viridis')
+            ax.set_title('Distribusi Risiko Churn berdasarkan Lama Berlangganan (> 0 bulan)')
+            ax.set_xlabel('Lama Berlangganan (bulan)')
+            ax.set_ylabel('Jumlah Pelanggan')
+            ax.legend(title='Kategori Risiko')
+            plt.xticks(rotation=45)
+            plt.tight_layout()
             st.pyplot(fig)
             plt.close(fig)
 
-            # Visualisasi Lama Berlangganan
-            st.subheader("Hubungan Lama Berlangganan dan Probabilitas Churn")
-            df_predict_filtered = df_predict[df_predict["Lama_Berlangganan_Bulan"] > 0]
-            fig, ax = plt.subplots(figsize=(10, 6))
-            sns.scatterplot(data=df_predict_filtered, x="Lama_Berlangganan_Bulan", y="Churn_Probability", hue="Churn_Risk_Category", palette="coolwarm")
-            ax.set_title("Probabilitas Churn vs Lama Berlangganan")
-            ax.set_xlabel("Lama Berlangganan (bulan)")
-            ax.set_ylabel("Probabilitas Churn")
+            # Visualisasi Risiko Churn berdasarkan Produk
+            st.subheader("🧾 Risiko Churn berdasarkan Produk")
+            fig, ax = plt.subplots(figsize=(10,6))
+            pd.crosstab(df_mer['L_PRODUK'], df_mer['Churn_Risk_Category']).plot(kind='barh', stacked=True, ax=ax)
+            ax.set_title("Risiko Churn Berdasarkan Produk")
+            ax.set_xlabel("Jumlah Pelanggan")
+            ax.set_ylabel("Produk")
+            st.pyplot(fig)
+            plt.close(fig)
+
+            # Visualisasi Risiko Churn berdasarkan Ekosistem
+            st.subheader("🌐 Risiko Churn berdasarkan Ekosistem")
+            fig, ax = plt.subplots(figsize=(10,8))
+            pd.crosstab(df_mer['L_EKOSISTEM'], df_mer['Churn_Risk_Category']).plot(kind='barh', stacked=True, ax=ax)
+            ax.set_title("Risiko Churn Berdasarkan Ekosistem")
+            ax.set_xlabel("Jumlah Pelanggan")
+            ax.set_ylabel("Ekosistem")
             st.pyplot(fig)
             plt.close(fig)
 
         else:
-            st.warning("Silakan unggah data hasil prediksi churn yang mencakup kolom 'Churn_Probability' dan 'Churn_Risk_Category'.")
+            st.warning("Silakan unggah data prediksi churn yang mencakup kolom 'Churn_Risk_Category' terlebih dahulu.")
