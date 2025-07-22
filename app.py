@@ -46,23 +46,39 @@ def assign_churn_risk(prob):
 # -------------------------------
 def generate_recommendations(df):
     recs = []
-    # Rekomendasi berdasarkan Paket
+
+    # Rekomendasi 1: Fokus pada Paket dengan Churn Tinggi
     if 'PAKET_DIGI' in df.columns and 'Churn_Risk_Category' in df.columns:
-        paket_counts = df[df['Churn_Risk_Category'] == 'Tinggi']['PAKET_DIGI'].value_counts()
-        if not paket_counts.empty:
-            top_paket = paket_counts.index[0]
-            recs.append(f"Fokuskan kampanye retensi pada pelanggan dengan paket {top_paket} karena mendominasi risiko churn tinggi.")
-    # Rekomendasi berdasarkan STO
+        high_risk_paket = df[df['Churn_Risk_Category'] == 'Tinggi']['PAKET_DIGI'].value_counts()
+        if not high_risk_paket.empty:
+            top_paket = high_risk_paket.idxmax()
+            recs.append(
+                f"Intervensi proaktif pada produk dan paket seperti **{top_paket}**, karena menunjukkan konsentrasi pelanggan dengan risiko churn tinggi."
+            )
+
+    # Rekomendasi 2: Audit STO dengan Konsentrasi Risiko Tinggi
     if 'STO' in df.columns and 'Churn_Risk_Category' in df.columns:
-        sto_counts = df[df['Churn_Risk_Category'] == 'Tinggi']['STO'].value_counts()
-        if not sto_counts.empty:
-            top_sto = sto_counts.head(3).index.tolist()
-            recs.append(f"Lakukan audit teknis pada STO: {', '.join(top_sto)} karena memiliki konsentrasi churn tinggi.")
-    # Rekomendasi berdasarkan Lama Berlangganan
+        high_risk_sto = df[df['Churn_Risk_Category'] == 'Tinggi']['STO'].value_counts()
+        if not high_risk_sto.empty:
+            top_sto_list = high_risk_sto.head(2).index.tolist()
+            sto_text = ", ".join(top_sto_list)
+            recs.append(
+                f"Lakukan audit teknis dan evaluasi kualitas layanan di wilayah STO: **{sto_text}**, karena mencatatkan tingkat churn tertinggi."
+            )
+
+    # Rekomendasi 3: Onboarding & Engagement
     if 'Lama_Berlangganan_Bulan' in df.columns and 'Churn_Risk_Category' in df.columns:
-        tenure_vals = df[df['Churn_Risk_Category'] == 'Tinggi']['Lama_Berlangganan_Bulan']
-        if not tenure_vals.empty and tenure_vals.mean() < 12:
-            recs.append("Perkuat program onboarding dan komunikasi pada pelanggan dengan masa berlangganan kurang dari 12 bulan.")
+        tenure = df[df['Churn_Risk_Category'] == 'Tinggi']['Lama_Berlangganan_Bulan']
+        if not tenure.empty:
+            if tenure.mean() < 12:
+                recs.append(
+                    "Perkuat program onboarding dan komunikasi intensif pada pelanggan dengan masa berlangganan kurang dari 12 bulan untuk mencegah churn dini."
+                )
+            else:
+                recs.append(
+                    "Tinjau kembali program loyalitas untuk pelanggan lama karena churn juga terjadi setelah masa berlangganan lebih dari 12 bulan."
+                )
+
     return recs
 
 # -------------------------------
