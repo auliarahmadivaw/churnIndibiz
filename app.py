@@ -138,7 +138,8 @@ elif page == "Unggah Data File":
                     data_with_predictions['Churn_Risk_Category'] = data_with_predictions['Churn_Probability'].apply(assign_churn_risk)
                     st.session_state.data_to_predict = data_with_predictions
                     st.subheader("📈 Hasil Prediksi Churn")
-                    display_columns = ['Customer_Name', 'Predicted_Status_Churn', 'Churn_Probability', 'Churn_Risk_Category']
+                    isplay_columns = ['Customer_Name', 'STO', 'PAKET_DIGI', 'Lama_Berlangganan_Bulan',
+                   'L_PRODUK', 'L_EKOSISTEM', 'Predicted_Status_Churn', 'Churn_Probability', 'Churn_Risk_Category']
                     st.dataframe(st.session_state.data_to_predict[display_columns])
                     st.subheader("📊 Ringkasan Prediksi Churn")
                     with st.container(border=True):
