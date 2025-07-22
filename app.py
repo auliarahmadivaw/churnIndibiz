@@ -8,77 +8,6 @@ import matplotlib.pyplot as plt # Import matplotlib
 import seaborn as sns # Import seaborn
 
 # =======================
-# 1. Load Gambar dan Encode Base64 (Commented out as the file is not available)
-# ===============================
-# Fungsi untuk mengatur latar belakang
-# def set_background(image_path):
-#     try:
-#         with open(image_path, "rb") as f:
-#             data = f.read()
-#         encoded = base64.b64encode(data).decode()
-#         st.markdown(
-#             f"""
-#             <style>
-#             .stApp {{
-#                 background-image: url(data:image/png;base64,{encoded});
-#                 background-size: cover;
-#                 background-repeat: no-repeat;
-#                 background-attachment: fixed; # Optional: Fix background during scroll
-#             }}
-#             </style>
-#             """,
-#             unsafe_allow_html=True
-#         )
-#     except FileNotFoundError:
-#         st.warning(f"⚠️ File gambar latar belakang '{image_path}' tidak ditemukan.")
-
-# # Set the background image
-# set_background("BG WEB.png")
-
-# # Add custom CSS for reduced opacity of main content area and centering image
-# st.markdown(
-#     """
-#     <style>
-#     /* Remove default header background */
-#     .stApp > header {
-#         background-color: transparent;
-#     }
-
-#     /* Style the main content area container with semi-transparent white background */
-#     .main .block-container {
-#         background-color: rgba(255, 255, 255, 0.9); /* Increased opacity to 90% */
-#         padding: 20px; /* Add some padding */
-#         border-radius: 10px; /* Rounded corners */
-#         margin-top: 20px; /* Add some space from the top */
-#         margin-bottom: 20px; /* Add some space at the bottom */
-#         position: relative; /* Needed for z-index to work correctly */
-#         z-index: 1; /* Ensure the main content is above the background */
-#     }
-
-#     /* Center images within the main content area */
-#     .main .block-container img {
-#         display: block; /* Make the image a block element */
-#         margin-left: auto; /* Auto left margin */
-#         margin-right: auto; /* Auto right margin */
-#     }
-
-#      /* Optional: Adjust opacity of sidebar if needed */
-#     /*
-#     .stSidebar > div:first-child {
-#         background-color: rgba(255, 255, 255, 0.85); # White background with 85% opacity
-#         padding: 20px;
-#         border-radius: 10px;
-#         position: relative;
-#         z-index: 1;
-#     }
-#     */
-#     </style>
-#     """,
-#     unsafe_allow_html=True
-# )
-
-
-# =======================
 # 2. Load Model & Data
 # =======================
 st.set_page_config(page_title="Dashboard Churn IndiBiz", layout="wide")
@@ -334,78 +263,51 @@ elif page == "Input Data Manual":
 elif page == "Analisis Pelanggan Churn":
     with st.container():
         st.header("🔍 Analisis Pelanggan Churn")
-        st.markdown("Visualisasi faktor-faktor yang terkait dengan pelanggan yang churn.")
+        st.markdown("Visualisasi faktor-faktor yang terkait dengan pelanggan yang diprediksi churn berdasarkan hasil model.")
 
-        # Use data from session state for visualization if available and has 'Status_Churn'
-        if st.session_state.data_to_predict is not None and 'Status_Churn' in st.session_state.data_to_predict.columns:
-            df_for_analysis = st.session_state.data_to_predict # Use data from session state
-            df_churn = df_for_analysis[df_for_analysis['Status_Churn'] == 1].copy()
+        # Gunakan data prediksi dari session state
+        if st.session_state.data_to_predict is not None and 'Churn_Risk_Category' in st.session_state.data_to_predict.columns:
+            df_predict = st.session_state.data_to_predict
 
+            st.subheader("Distribusi Kategori Risiko Churn")
+            fig, ax = plt.subplots()
+            sns.countplot(data=df_predict, x="Churn_Risk_Category", order=["Rendah", "Sedang", "Tinggi"], palette="Set2")
+            ax.set_title("Distribusi Risiko Churn")
+            ax.set_xlabel("Kategori Risiko")
+            ax.set_ylabel("Jumlah Pelanggan")
+            st.pyplot(fig)
+            plt.close(fig)
 
-            if not df_churn.empty:
-                st.subheader("Distribusi Faktor pada Pelanggan Churn")
+            # Visualisasi berdasarkan Paket Digi
+            st.subheader("Distribusi Risiko Churn berdasarkan Paket Digi")
+            fig, ax = plt.subplots(figsize=(10, 6))
+            sns.countplot(data=df_predict, y="PAKET_DIGI", hue="Churn_Risk_Category", order=df_predict["PAKET_DIGI"].value_counts().index)
+            ax.set_title("Risiko Churn berdasarkan Paket Digi")
+            ax.set_xlabel("Jumlah")
+            ax.set_ylabel("Paket Digi")
+            st.pyplot(fig)
+            plt.close(fig)
 
-                # Plot 1: PAKET_DIGI
-                st.write("Paket Digi Pelanggan Churn:")
-                fig, ax = plt.subplots(figsize=(8, 5))
-                sns.countplot(data=df_churn, y='PAKET_DIGI', ax=ax, order=df_churn['PAKET_DIGI'].value_counts().index)
-                ax.set_title('Pelanggan Churn Berdasarkan Paket Digi')
-                ax.set_xlabel('Jumlah')
-                ax.set_ylabel('Paket')
-                st.pyplot(fig)
-                plt.close(fig)
+            # Visualisasi berdasarkan STO
+            st.subheader("Distribusi Risiko Churn berdasarkan STO")
+            fig, ax = plt.subplots(figsize=(10, 8))
+            sns.countplot(data=df_predict, y="STO", hue="Churn_Risk_Category", order=df_predict["STO"].value_counts().index)
+            ax.set_title("Risiko Churn berdasarkan STO")
+            ax.set_xlabel("Jumlah")
+            ax.set_ylabel("STO")
+            st.pyplot(fig)
+            plt.close(fig)
 
-                # Plot 2: L_EKOSISTEM
-                st.write("Ekosistem Pelanggan Churn:")
-                fig, ax = plt.subplots(figsize=(8, 6))
-                sns.countplot(data=df_churn, y='L_EKOSISTEM', ax=ax, order=df_churn['L_EKOSISTEM'].value_counts().index)
-                ax.set_title('Pelanggan Churn Berdasarkan Ekosistem')
-                ax.set_xlabel('Jumlah')
-                ax.set_ylabel('Ekosistem')
-                st.pyplot(fig)
-                plt.close(fig)
+            # Visualisasi Lama Berlangganan
+            st.subheader("Hubungan Lama Berlangganan dan Probabilitas Churn")
+            df_predict_filtered = df_predict[df_predict["Lama_Berlangganan_Bulan"] > 0]
+            fig, ax = plt.subplots(figsize=(10, 6))
+            sns.scatterplot(data=df_predict_filtered, x="Lama_Berlangganan_Bulan", y="Churn_Probability", hue="Churn_Risk_Category", palette="coolwarm")
+            ax.set_title("Probabilitas Churn vs Lama Berlangganan")
+            ax.set_xlabel("Lama Berlangganan (bulan)")
+            ax.set_ylabel("Probabilitas Churn")
+            st.pyplot(fig)
+            plt.close(fig)
 
-                # Plot 3: L_PRODUK
-                st.write("Produk Pelanggan Churn:")
-                fig, ax = plt.subplots(figsize=(8, 5))
-                sns.countplot(data=df_churn, y='L_PRODUK', ax=ax, order=df_churn['L_PRODUK'].value_counts().index)
-                ax.set_title('Pelanggan Churn Berdasarkan Produk')
-                ax.set_xlabel('Jumlah')
-                ax.set_ylabel('Produk')
-                st.pyplot(fig)
-                plt.close(fig)
-
-                # Plot 4: Lama Berlangganan
-                st.write("Lama Berlangganan Pelanggan Churn :") # Updated text
-                # Filter data for Lama_Berlangganan_Bulan > 0
-                df_churn_filtered_lama = df_churn[df_churn['Lama_Berlangganan_Bulan'] > 0].copy()
-
-                if not df_churn_filtered_lama.empty:
-                    fig, ax = plt.subplots(figsize=(8, 5))
-                    ax.hist(df_churn_filtered_lama['Lama_Berlangganan_Bulan'], bins=10, color='orange', edgecolor='black')
-                    ax.set_title('Distribusi Lama Berlangganan Pelanggan Churn') # Updated title
-                    ax.set_xlabel('Lama Berlangganan (bulan)')
-                    ax.set_ylabel('Jumlah')
-                    st.pyplot(fig)
-                    plt.close(fig)
-                else:
-                    st.info("Tidak ada pelanggan churn dengan lama berlangganan di atas 0 bulan dalam file yang diunggah.")
-
-
-                # Plot 5: STO
-                st.write("STO Pelanggan Churn:")
-                fig, ax = plt.subplots(figsize=(8, 8)) # Adjust size for potentially many STOs
-                sns.countplot(data=df_churn, y='STO', ax=ax, order=df_churn['STO'].value_counts().index)
-                ax.set_title('STO Pelanggan yang Churn')
-                ax.set_xlabel('Jumlah')
-                ax.set_ylabel('STO')
-                st.pyplot(fig)
-                plt.close(fig)
-
-
-            else:
-                st.info("Tidak ada data pelanggan yang churn dalam file yang diunggah untuk ditampilkan analisisnya.")
-        elif st.session_state.data_to_predict is not None and 'Status_Churn' not in st.session_state.data_to_predict.columns:
-             st.warning("File yang diunggah tidak memiliki kolom 'Status_Churn' yang diperlukan untuk analisis pelanggan churn.")
         else:
-             st.warning("Silakan unggah file data pelanggan terlebih dahulu di halaman 'Unggah Data File' untuk melihat analisis pelanggan churn.")
+            st.warning("Silakan unggah data hasil prediksi churn yang mencakup kolom 'Churn_Probability' dan 'Churn_Risk_Category'.")
