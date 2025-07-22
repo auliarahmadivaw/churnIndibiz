@@ -198,6 +198,26 @@ elif page == "Unggah Data File":
                     st.text(traceback.format_exc())
             else:
                 st.warning("⚠️ Silakan unggah file data pelanggan terlebih dahulu.")
+                
+         # Tambahkan kesimpulan berdasarkan jumlah churn
+        st.markdown("### Kesimpulan Risiko Churn")
+        high = churn_counts.get("Tinggi", 0)
+        medium = churn_counts.get("Sedang", 0)
+        low = churn_counts.get("Rendah", 0)
+        st.markdown(f"- Jumlah pelanggan dengan risiko **Tinggi**: {high}")
+        st.markdown(f"- Jumlah pelanggan dengan risiko **Sedang**: {medium}")
+        st.markdown(f"- Jumlah pelanggan dengan risiko **Rendah**: {low}")
+
+        total = high + medium + low
+        if high > medium and high > low:
+            st.markdown("👉 Mayoritas pelanggan berada pada kategori **risiko churn tinggi**, yang menunjukkan perlunya strategi retensi yang agresif.")
+        elif medium > high and medium > low:
+            st.markdown("👉 Mayoritas pelanggan berada pada kategori **risiko churn sedang**, sehingga perlu penguatan loyalitas dan pelayanan.")
+        else:
+            st.markdown("👉 Sebagian besar pelanggan memiliki **risiko churn rendah**, namun tetap perlu pemantauan berkala.")
+
+        st.markdown("---")
+        st.subheader("Analisis Pelanggan Churn")
 
 elif page == "Input Data Manual":
     with st.container():
