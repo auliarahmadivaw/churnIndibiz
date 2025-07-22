@@ -66,18 +66,23 @@ def generate_recommendations(df):
             )
 
     # 3. Edukasi & Engagement di 6–12 Bulan Pertama
-    if 'Lama_Berlangganan_Bulan' in df.columns and 'Churn_Risk_Category' in df.columns:
-        tenure = df[df['Churn_Risk_Category'] == 'Tinggi']['Lama_Berlangganan_Bulan']
-        if not tenure.empty:
-            if tenure.mean() < 12:
-                recs.append(
-                    "Tingkatkan edukasi, onboarding, dan komunikasi rutin untuk pelanggan baru (<12 bulan) karena mereka berisiko lebih tinggi untuk churn."
-                )
-            else:
-                recs.append(
-                    "Perkuat loyalitas dan manfaat tambahan bagi pelanggan jangka panjang yang tetap menunjukkan risiko churn."
-                )
+   if 'Lama_Berlangganan_Bulan' in df.columns and 'Churn_Risk_Category' in df.columns:
+    df_churn = df[df['Churn_Risk_Category'] == 'Tinggi']
+    if not df_churn.empty:
+        bins = [0, 6, 12, float('inf')]
+        labels = ['0–6 bulan', '7–12 bulan', '>12 bulan']
+        df_churn['tenure_group'] = pd.cut(df_churn['Lama_Berlangganan_Bulan'], bins=bins, labels=labels, right=True)
+        group_counts = df_churn['tenure_group'].value_counts().sort_index()
 
+        # Ambil grup dengan churn terbanyak
+        if not group_counts.empty:
+            top_group = group_counts.idxmax()
+            if top_group == '0–6 bulan':
+                recs.append("Tingkatkan onboarding dan komunikasi intensif pada 6 bulan pertama, karena di fase ini banyak pelanggan berisiko churn.")
+            elif top_group == '7–12 bulan':
+                recs.append("Perkuat engagement dan manfaat tambahan pada bulan ke-7 hingga ke-12, karena fase ini mencatat churn tertinggi.")
+            else:
+                recs.append("Evaluasi loyalitas pelanggan jangka panjang (>12 bulan) karena mereka masih menunjukkan risiko churn tinggi.")
     # 4. Segmentasi Penawaran Berdasarkan Ekosistem
     if 'EKOSISTEM' in df.columns and 'Churn_Risk_Category' in df.columns:
         ekosistem_risk = df[df['Churn_Risk_Category'] == 'Tinggi']['EKOSISTEM'].value_counts()
