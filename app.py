@@ -250,16 +250,12 @@ elif page == "Analisis Pelanggan Churn":
             plt.close(fig)
 
             # Visualisasi Risiko Churn berdasarkan STO
-            st.subheader("📍 Risiko Churn berdasarkan STO")
-            sto_risk = df_mer.groupby(['STO', 'Churn_Risk_Category']).size().unstack().fillna(0)
+            st.subheader("🧾 Risiko Churn berdasarkan STO")
             fig, ax = plt.subplots(figsize=(10,6))
-            sto_risk.plot(kind='bar', stacked=True, ax=ax, colormap='plasma')
-            ax.set_title('Distribusi Risiko Churn berdasarkan STO')
-            ax.set_xlabel('STO')
-            ax.set_ylabel('Jumlah Pelanggan')
-            ax.legend(title='Kategori Risiko')
-            plt.xticks(rotation=45)
-            plt.tight_layout()
+            pd.crosstab(df_mer['STO'], df_mer['Churn_Risk_Category']).plot(kind='barh', stacked=True, ax=ax)
+            ax.set_title("Risiko Churn Berdasarkan STO (Lokasi)")
+            ax.set_xlabel("Jumlah Pelanggan")
+            ax.set_ylabel("STO")
             st.pyplot(fig)
             plt.close(fig)
 
