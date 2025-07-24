@@ -78,9 +78,9 @@ def generate_recommendations(df):
         if not group_counts.empty:
             top_group = group_counts.idxmax()
             if top_group == '0–6 bulan':
-                recs.append("Tingkatkan onboarding dan komunikasi intensif pada 6 bulan pertama, karena di fase ini banyak pelanggan berisiko churn.")
+                recs.append("Intervensi Proaktif Customer Service pada 6 bulan pertama, karena di fase ini banyak pelanggan berisiko churn.")
             elif top_group == '7–12 bulan':
-                recs.append("Perkuat engagement dan manfaat tambahan pada bulan ke-7 hingga ke-12, karena fase ini mencatat churn tertinggi.")
+                recs.append("Intervensi Proaktif Customer Service pada pada pelanggan bulan ke-7 hingga ke-12, karena fase ini mencatat churn tertinggi.")
             else:
                 recs.append("Evaluasi loyalitas pelanggan jangka panjang (>12 bulan) karena mereka masih menunjukkan risiko churn tinggi.")
 
